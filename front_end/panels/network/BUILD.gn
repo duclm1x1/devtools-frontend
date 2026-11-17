@@ -175,6 +175,7 @@ devtools_ui_module("unittests") {
 
   sources = [
     "BinaryResourceView.test.ts",
+    "ExportZip.test.ts",
     "FetchHeaderCommenting.test.ts",
     "LinkPreloadGenerator.test.ts",
     "NetworkConfigView.test.ts",
