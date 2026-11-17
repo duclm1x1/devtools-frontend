@@ -57,6 +57,7 @@ import * as MobileThrottling from '../mobile_throttling/mobile_throttling.js';
 import * as Search from '../search/search.js';
 
 import {Events, type RequestActivatedEvent, RequestPanelBehavior} from './NetworkDataGridNode.js';
+import * as ExportEverything from './ExportEverything.js';
 import {NetworkItemView} from './NetworkItemView.js';
 import {NetworkLogView} from './NetworkLogView.js';
 import {NetworkOverview} from './NetworkOverview.js';
@@ -155,6 +156,11 @@ const UIStrings = {
    * triggers the download of a HAR file with sensitive data included.
    */
   exportHarWithSensitiveData: 'Export `HAR` (with sensitive data)…',
+  /**
+   * @description Tooltip text for a button in the Network panel that downloads a complete archive
+   * containing HAR, cookies, DOM, console, storage, screenshots and assets.
+   */
+  exportEverything: 'Export Everything',
   /**
    * @description Text for throttling the network
    */
@@ -607,6 +613,13 @@ export class NetworkPanel extends UI.Panel.Panel implements
         exportHarContextMenu, /* isIconDropdown */ true, /* useSoftMenu */ false, 'export-har-menu', 'download');
     exportHarMenuButton.setTitle(i18nString(UIStrings.exportHar));
     this.panelToolbar.appendToolbarItem(exportHarMenuButton);
+
+    const exportEverythingButton = new UI.Toolbar.ToolbarButton(
+        i18nString(UIStrings.exportEverything), 'download', undefined, 'export-everything');
+    exportEverythingButton.addEventListener(UI.Toolbar.ToolbarButton.Events.CLICK, () => {
+      void ExportEverything.exportEverything(this.networkLogView.requestsForBundle());
+    }, this);
+    this.panelToolbar.appendToolbarItem(exportEverythingButton);
 
     const networkShowOptionsToGenerateHarWithSensitiveData = Common.Settings.Settings.instance().resolve(
         Settings.NetworkSettings.showOptionsToGenerateHarWithSensitiveDataSettingDescriptor);

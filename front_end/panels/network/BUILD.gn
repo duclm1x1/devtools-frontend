@@ -36,6 +36,8 @@ devtools_ui_module("network") {
   sources = [
     "BinaryResourceView.ts",
     "EventSourceMessagesView.ts",
+    "ExportEverything.ts",
+    "ExportZip.ts",
     "FetchHeaderCommenting.ts",
     "LinkPreloadGenerator.ts",
     "NetworkConfigView.ts",

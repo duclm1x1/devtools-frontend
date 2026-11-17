@@ -2299,6 +2299,13 @@ export class NetworkLogView extends NetworkLogViewBase implements
     Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(commands);
   }
 
+  /**
+   * Returns the same filtered, finished requests that the HAR export uses.
+   */
+  requestsForBundle(): SDK.NetworkRequest.NetworkRequest[] {
+    return this.#harRequests();
+  }
+
   async exportAll(options: HAR.Log.BuildOptions): Promise<void> {
     const mainTarget = SDK.TargetManager.TargetManager.instance().scopeTarget();
     if (!mainTarget) {

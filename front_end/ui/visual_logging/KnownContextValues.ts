@@ -1818,6 +1818,7 @@ export const knownContextValues: Set<string> = new Set([
   'explain.teaser.learn-more',
   'explanation',
   'export-ai-conversation',
+  'export-everything',
   'export-har',
   'export-har-menu',
   'export-har-with-sensitive-data',
