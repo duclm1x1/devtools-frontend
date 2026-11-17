@@ -43,7 +43,7 @@ function normalizePath(path: string): string {
  * Builds a store-method ZIP. Responses are already compressed, and storing keeps
  * the browser-side implementation small and dependency-free.
  */
-export function createZip(entries: ZipEntry[], now = new Date()): Uint8Array {
+export function createZip(entries: ZipEntry[], now: Date = new Date()): Uint8Array {
   const encoder = new TextEncoder();
   const {time, date} = dosDateTime(now);
   const used = new Set<string>();

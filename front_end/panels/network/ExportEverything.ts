@@ -6,6 +6,7 @@ import * as Common from '../../core/common/common.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as TextUtils from '../../core/text_utils/text_utils.js';
+import * as Protocol from '../../generated/protocol.js';
 import * as HAR from '../../models/har/har.js';
 import * as Workspace from '../../models/workspace/workspace.js';
 
@@ -362,6 +363,8 @@ export async function exportEverything(requests: SDK.NetworkRequest.NetworkReque
   const warnings: string[] = [];
   const usedPaths = new Set<string>();
   const pageUrl = target.inspectedURL();
+  let pageTitle = '';
+  let cookieCount = 0;
   let host = 'page';
   try {
     host = new URL(pageUrl).hostname || 'page';
@@ -372,12 +375,13 @@ export async function exportEverything(requests: SDK.NetworkRequest.NetworkReque
   try {
     const progress = new Common.Progress.Progress();
     const composite = new Common.Progress.CompositeProgress(progress);
-    const har = await HAR.Writer.harStringForRequests(requests.slice(), {sanitize: false}, composite);
+    const har = await HAR.Writer.Writer.harStringForRequests(requests.slice(), {sanitize: false}, composite);
     addText(files, 'har/page.har', har);
 
     try {
       const {cookies} = await target.networkAgent().invoke_getAllCookies();
       const filtered = cookies.filter(cookie => cookieMatchesHost(cookie.domain, host));
+      cookieCount = filtered.length;
       addJson(files, 'cookies/cookies.json', filtered);
       addJson(files, 'cookies/cookies.j2team.json', filtered.map(cookie => ({
         domain: cookie.domain,
@@ -413,7 +417,21 @@ export async function exportEverything(requests: SDK.NetworkRequest.NetworkReque
     }
 
     try {
-      const snapshot = await target.pageAgent().invoke_captureSnapshot({format: 'mhtml'});
+      const titleResult = await target.runtimeAgent().invoke_evaluate({
+        expression: 'document.title',
+        returnByValue: true,
+      });
+      if (typeof titleResult.result.value === 'string') {
+        pageTitle = titleResult.result.value;
+      }
+    } catch {
+      // The title is optional.
+    }
+
+    try {
+      const snapshot = await target.pageAgent().invoke_captureSnapshot({
+        format: Protocol.Page.CaptureSnapshotRequestFormat.MHTML,
+      });
       addText(files, 'page/page.mhtml', snapshot.data);
     } catch (error) {
       warnings.push(`MHTML: ${error instanceof Error ? error.message : String(error)}`);
@@ -423,12 +441,14 @@ export async function exportEverything(requests: SDK.NetworkRequest.NetworkReque
     if (screenModel) {
       try {
         const viewport = await screenModel.captureScreenshot(
-            'png', 100, SDK.ScreenCaptureModel.ScreenshotMode.FROM_VIEWPORT);
+            Protocol.Page.CaptureScreenshotRequestFormat.Png, 100,
+            SDK.ScreenCaptureModel.ScreenshotMode.FROM_VIEWPORT);
         if (viewport) {
           files.push({path: 'page/screenshot.png', data: Common.Base64.decode(viewport)});
         }
         const full = await screenModel.captureScreenshot(
-            'png', 100, SDK.ScreenCaptureModel.ScreenshotMode.FULLPAGE);
+            Protocol.Page.CaptureScreenshotRequestFormat.Png, 100,
+            SDK.ScreenCaptureModel.ScreenshotMode.FULLPAGE);
         if (full) {
           files.push({path: 'page/screenshot-full.png', data: Common.Base64.decode(full)});
         }
@@ -495,10 +515,10 @@ export async function exportEverything(requests: SDK.NetworkRequest.NetworkReque
       tool: 'DevTools Export Everything',
       version: '1.0.0',
       exportedAt: new Date().toISOString(),
-      page: {url: pageUrl, title: ''},
+      page: {url: pageUrl, title: pageTitle},
       counts: {
         harEntries: requests.length,
-        cookies: files.filter(file => file.path.startsWith('cookies/')).length,
+        cookies: cookieCount,
         consoleEntries: consoleRows.length,
         assets: assetIndex,
         files: files.length + 1,
